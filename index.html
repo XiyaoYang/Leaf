@@ -1,0 +1,1479 @@
+<%@ Master Language="C#" AutoEventWireup="true" CodeBehind="Site.master.cs" Inherits="LeafWeb.Site" %>
+
+<%@ Import Namespace="Caradigm.Platform.AppFramework.WebAppRuntime" %>
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head runat="server">
+    <meta http-equiv="X-UA-Compatible" content="IE=10" />
+    <title>Leaf Clinical Data Explorer</title>
+    <%-- <script type="text/javascript" src="<%= WebAppUtils.GetCacheSafeRootScriptsUrl("jquery-1.9.1.js") %>"></script>--%>
+
+    <script type="text/javascript" src="js/jquery-1.11.3.min.js"></script>
+    <script type="text/javascript" src="<%= WebAppUtils.GetCacheSafeRootScriptsUrl("jquery-ui.min.js") %>"></script>
+    <script type="text/javascript" src="js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="js/moment.js"></script>
+    <script type="text/javascript" src="js/bootstrap-datetimepicker.min.js"></script>
+    <script type="text/javascript" src="js/d3.min.js"></script>
+    <script type="text/javascript" src="js/d3-tip.js"></script>
+    <script type="text/javascript" src="js/datatables.min.js"></script>
+    <script type="text/javascript" src="js/typeahead.min.js"></script>
+    <script type="text/javascript" src="js/jstree.min.js"></script>
+    <script type="text/javascript" src="<%= WebAppUtils.GetCacheSafeRootScriptsUrl("knockout-2.2.1.js") %>"></script>
+
+    <script type="text/javascript" src="<%= WebAppUtils.GetCacheSafeRootScriptsUrl("Caradigm.Platform.AppFramework.js") %>"></script>
+    <script type="text/javascript" src="<%= WebAppUtils.GetCacheSafeRootScriptsUrl("Caradigm.Platform.AppFramework.WebApp.js") %>"></script>
+    <script type="text/javascript" src="<%= WebAppUtils.GetCacheSafeRootScriptsUrl("Caradigm.Applications.Widgets.js") %>"></script>
+    <script type="text/javascript" src="<%= WebAppUtils.GetCacheSafeRootScriptsUrl("Caradigm.Applications.Common.js") %>"></script>
+
+    <link rel="stylesheet" href="<%= WebAppUtils.GetCacheSafeRootCssUrl("jquery-ui.min.css") %>" />
+    <link rel="stylesheet" href="<%= WebAppUtils.GetCacheSafeRootCssUrl("Caradigm.Applications.Common.css") %>" />
+    <link href="css/Caradigm.Applications.Common.css" rel="Stylesheet" type="text/css" />
+    <link href="css/bootstrap.css" rel="stylesheet" />
+    <link rel="stylesheet" href="css/index.css" />
+    <link rel="stylesheet" href="css/bootstrap-datetimepicker.min.css" />
+    <link rel="stylesheet" href="css/style.min.css" />
+    <link rel="stylesheet" href="css/datatables.min.css" />
+
+
+
+    <script type="text/javascript">
+        $(window).load(function () {
+            $("#modal-login").modal({
+                show: true,
+                keyboard: true,
+                backdrop: "static"
+            });
+
+            $("#login-carousel").carousel({
+                pause: true,
+                interval: false,
+                keyboard: false
+            });
+        });
+
+        $(document).ready(function () {
+
+            // Prepare the panels
+            Leaf.Utils.initializePanels();
+
+            Leaf.Ajax.getUserSessionOptions();
+
+            Leaf.Ui.initializeUserInterface();
+        });
+    </script>
+
+    <asp:ContentPlaceHolder ID="Content1" runat="server"></asp:ContentPlaceHolder>
+</head>
+
+<asp:contentplaceholder id="PlaceHolderMain" runat="server">
+        <body>
+		
+<!-- The divs for popover help -->
+	<div id="popoverHelpConceptList-container" style="display: none;">
+    Concepts are the building blocks of Leaf queries.
+    <br /> Concepts contain either longitudinal data ( represented by the
+    <span class="glyphicon glyphicon-time"></span> icon )
+    <br /> or the latest per-patient data ( represented by the
+    <span class="glyphicon glyphicon-user"></span> icon ).
+    <br /> To search for a concept, type into the Search box; or expand the Concept List tree.
+    <br /> To build a query, drag the concepts from the left, to the panels on the right.
+    <br />
+	
+	<!-- img src='gif/PopoverHelpConceptList_Content_1.gif' alt='' / -->
+    </div> 
+
+<!-- The divs for popover help -->
+	
+            <div class="cip" id="mainContent"></div>
+              <div class="modal fade" id="modal-rcimport" data-backdrop="false">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">REDCap Project Import</h4>
+                </div>
+                <div class="modal-body">
+                    <div id="rcimport-progress" class="row">
+                        <div class="col-md-12 col-lg-12">
+                            <ol class="process-steps">
+                                <li class="done" data-step="1">Add Token</li>
+                                <li class="todo" data-step="2">Choose MRN Field</li>
+                                <li class="todo" data-step="3">Set Form Info</li>
+                            </ol>
+                        </div>
+                    </div>
+                    <div id="rcimport-body" class="row">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn leaf-btn-default pull-left" id="btn-rcimport-back">Cancel</button>
+                    <button type="button" class="btn leaf-btn-primary" id="btn-rcimport-forward">Get Project From REDCap</button>
+                </div>
+      </div>
+      <!-- /.modal-content -->
+    </div>
+    <!-- /.modal-dialog -->
+  </div>
+  <!-- /.modal -->
+              <div class="modal fade" id="modal-conceptWiki" tabindex="0" role="dialog" data-backdrop="false" data-keyboard="false" data-show="false">
+		            <div class="modal-dialog" role="document">
+			            <div class="modal-content">
+				            <div class="modal-header">
+					            <button type="button" class="close" style="font-size: 21px" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+						            <h3 class="modal-title">Concept Wiki</h3>
+							</div>
+				            <div class="modal-body">
+					            <div class="row">
+                                    <div class="col-lg-6">
+                                        <form class="form-horizontal">
+                                          <div class="form-group">
+                                            <label class="control-label col-lg-3" for="conceptedit-id">Concept ID</label>
+                                            <div class="col-lg-9">
+                                              <input type="number" class="form-control" id="conceptedit-id" readonly>
+                                            </div>
+                                          </div>
+                                          <div class="form-group">
+                                            <label class="control-label col-lg-3" for="conceptedit-parentid">Parent ID</label>
+                                            <div class="col-lg-9">
+                                              <input type="text" class="form-control" id="conceptedit-parentid" readonly>
+                                            </div>
+                                          </div>
+                                          <div class="form-group">
+                                            <label class="control-label col-lg-3" for="conceptedit-name">Concept Name</label>
+                                            <div class="col-lg-9">
+                                              <input type="text" class="form-control" id="conceptedit-name" readonly>
+                                            </div>
+                                          </div>
+                                          <div class="form-group">
+                                            <label class="control-label col-lg-3" for="conceptedit-text">Concept Text</label>
+                                            <div class="col-lg-9">
+                                              <input type="text" class="form-control" id="conceptedit-text" readonly>
+                                            </div>
+                                          </div>
+                                          <div class="form-group">
+                                            <label class="control-label col-lg-3" for="conceptedit-patientcount">Patient Count</label>
+                                            <div class="col-lg-9">
+                                              <input type="number" class="form-control" id="conceptedit-patientcount" readonly>
+                                            </div>
+                                          </div>
+                                          <div class="form-group">
+                                            <label class="control-label col-lg-3" for="conceptedit-permitteduser">Permitted User</label>
+                                            <div class="col-lg-9">
+                                              <input type="text" class="form-control" id="conceptedit-permitteduser" readonly>
+                                            </div>
+                                          </div>
+                                          <div class="form-group">
+                                            <label class="control-label col-lg-3" for="conceptedit-tooltip">Tooltip</label>
+                                            <div class="col-lg-9">
+                                              <textarea rows="4" cols="48" class="form-control" id="conceptedit-tooltip" readonly></textarea>
+                                            </div>
+                                          </div>
+                                          <div class="form-group">
+                                            <label class="control-label col-lg-3" for="conceptedit-encounterbased">Encounter Based</label>
+                                            <div class="col-lg-9 switch">
+                                              <input type="checkbox" class="form-control cmn-toggle cmn-toggle-round" id="conceptedit-encounterbased" disabled>
+                                              <label for="conceptedit-encounterbased"></label>
+                                            </div>
+                                          </div>
+                                          <div class="form-group">
+                                            <label class="control-label col-lg-3" for="conceptedit-eventbased">Event Based</label>
+                                            <div class="col-lg-9 switch">
+                                              <input type="checkbox" class="form-control cmn-toggle cmn-toggle-round" id="conceptedit-eventbased" disabled>
+                                              <label for="conceptedit-eventbased"></label>
+                                            </div>
+                                          </div>
+                                          <div class="form-group">
+                                            <label class="control-label col-lg-3" for="conceptedit-numeric">Is Numeric</label>
+                                            <div class="col-lg-9 switch">
+                                              <input type="checkbox" class="form-control cmn-toggle cmn-toggle-round" id="conceptedit-numeric" disabled>
+                                              <label for="conceptedit-numeric"></label>
+                                            </div>
+                                          </div>
+                                          <div class="form-group">
+                                            <label class="control-label col-lg-3" for="conceptedit-parent">Is Parent</label>
+                                            <div class="col-lg-9 switch">
+                                              <input type="checkbox" class="form-control cmn-toggle cmn-toggle-round" id="conceptedit-parent" disabled>
+                                              <label for="conceptedit-parent"></label>
+                                            </div>
+                                          </div>
+                                          <div class="form-group">
+                                            <label class="control-label col-lg-3" for="conceptedit-hasdropdown">Has Dropdown</label>
+                                            <div class="col-lg-9 switch">
+                                              <input type="checkbox" class="form-control cmn-toggle cmn-toggle-round" id="conceptedit-hasdropdown" disabled>
+                                              <label for="conceptedit-hasdropdown"></label>
+                                            </div>
+                                          </div>
+                                     </form>
+                                 </div>
+                                 <div class="col-lg-6">
+                                     <form class="form-horizontal">
+                                          <div class="form-group">
+                                            <label class="control-label col-lg-3" for="conceptedit-sqlsetname">SQL Set Name</label>
+                                            <div class="col-lg-9">
+                                              <textarea rows="4" cols="48" class="form-control" id="conceptedit-sqlsetname" readonly></textarea>
+                                            </div>
+                                          </div>
+                                          <div class="form-group">
+                                            <label class="control-label col-lg-3" for="conceptedit-sqlwhereclause">SQL Where Clause</label>
+                                            <div class="col-lg-9">
+                                              <textarea rows="4" cols="48" class="form-control" id="conceptedit-sqlwhereclause" readonly></textarea>
+                                            </div>
+                                          </div>
+                                          <div class="form-group">
+                                            <label class="control-label col-lg-3" for="conceptedit-datefield">Date Field</label>
+                                            <div class="col-lg-9">
+                                              <input type="text" class="form-control" id="conceptedit-datefield" readonly>
+                                            </div>
+                                          </div>
+                                          <div class="form-group">
+                                            <label class="control-label col-lg-3" for="conceptedit-numericfield">Numeric Field</label>
+                                            <div class="col-lg-9">
+                                              <input type="text" class="form-control" id="conceptedit-numericfield" readonly>
+                                            </div>
+                                          </div>
+                                          <div class="form-group">
+                                            <label class="control-label col-lg-3" for="conceptedit-eventfield">Event Field</label>
+                                            <div class="col-lg-9">
+                                              <input type="text" class="form-control" id="conceptedit-eventfield" readonly>
+                                            </div>
+                                          </div>
+                                          <div class="form-group">
+                                            <label class="control-label col-lg-3" for="conceptedit-units">Units</label>
+                                            <div class="col-lg-9">
+                                              <input type="text" class="form-control" id="conceptedit-units" readonly>
+                                            </div>
+                                          </div>
+                                          <div class="form-group">
+                                            <label class="control-label col-lg-3" for="conceptedit-numericdefaultmessage">Numeric Default Message</label>
+                                            <div class="col-lg-9">
+                                              <input type="text" class="form-control" id="conceptedit-numericdefaultmessage" readonly>
+                                            </div>
+                                          </div>
+                                          <div class="form-group">
+                                            <label class="control-label col-lg-3" for="conceptedit-dropdowndefaultmessage">Dropdown Default Message</label>
+                                            <div class="col-lg-9">
+                                              <input type="text" class="form-control" id="conceptedit-dropdowndefaultmessage" readonly>
+                                            </div>
+                                          </div>
+                                          <div class="form-group">
+                                            <label class="control-label col-lg-3" for="conceptedit-dropdownelements">Dropdown Elements</label>
+                                            <div class="col-lg-9">
+                                              <textarea rows="4" cols="48" class="form-control" id="conceptedit-dropdownelements" readonly></textarea>
+                                            </div>
+                                          </div>
+                                     </form>
+					            </div>
+				            </div>
+                            </div>
+				            <div class="modal-footer">
+                                <button type="button" id="btn-conceptWiki-edit" class="btn leaf-btn-default pull-left">Edit Concept</button>
+                                <button type="button" id="btn-conceptWiki-saveedit" class="btn leaf-btn-primary">Save Concept</button>
+					            <button type="button" id="btn-conceptWiki-close" class="btn leaf-btn-default" data-dismiss="modal">Close</button>
+				            </div>
+			            </div>
+		            </div>
+	            </div>
+
+            
+     <div class="modal fade  modal-centered" id="modal-exportToRedcap" tabindex="0" role="dialog" data-backdrop="false" data-keyboard="false" data-show="false">
+		<div class="modal-dialog" role="document">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" style="font-size: 21px" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+						<h3 class="modal-title">Create Your REDCap Project</h3>
+							</div>
+				<div class="modal-body">
+                    <div class="form-group">
+                      <label for="project">Project Name:</label>
+                      <input type="text" class="form-control" id="project">
+                    </div>
+                </div>
+				<div class="modal-footer">
+                    <button type="button" class="btn leaf-btn-default pull-left" data-dismiss="modal">Cancel</button>
+					<button type="button" class="btn leaf-btn-default" data-dismiss="modal" id="btn-ExportData">Export</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+      <div class="modal fade modal-centered" id="modal-patientlist-updating" tabindex="0" role="dialog" data-backdrop="false" data-keyboard="false" data-show="false">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-body">
+                    <div class="row">
+                        <div class="col-lg-3 col-md-3">       
+                            <div class="loader">
+                               <svg class="circular" viewBox="25 25 50 50">
+                                 <circle class="path" cx="50" cy="50" r="20" fill="none" stroke-width="2" stroke-miterlimit="10"></circle>
+                               </svg>
+                            </div>
+                        </div>
+                        <div class="col-lg-8 col-md-8" id="modal-patientlist-header">Patient List</div>
+					    <div class="col-lg-8 col-md-8" id="modal-patientlist-text">Updating Patient List...</div>
+                    </div>
+                </div>
+			</div>
+		</div>
+	</div>
+
+
+    <div class="modal fade modal-centered" id="modal-RedcapProjectURL" tabindex="0" role="dialog" data-backdrop="false" data-keyboard="false" data-show="false">
+		<div class="modal-dialog" role="document">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" style="font-size: 21px" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+						<h3 class="modal-title">REDCap Project Successfully Created</h3>
+		        </div>
+				<div class="modal-body">
+                    <div class="row">
+                        <span id="projectName"></span>
+                    </div>
+                    <div class="row">
+                        <a id="projectURL" target="_blank"></a>
+                    </div>
+                </div>
+				<div class="modal-footer">
+					<button type="button" class="btn leaf-btn-default" data-dismiss="modal">Close</button>
+				</div>
+			</div>
+		</div>
+	</div>
+    
+    <div class="modal fade  modal-centered" id="modal-savePatientList" tabindex="0" role="dialog" data-backdrop="false" data-keyboard="false" data-show="false">
+		<div class="modal-dialog" role="document">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" style="font-size: 21px" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+						<h3 class="modal-title">Save/Edit Current Patient List</h3>
+							</div>
+				<div class="modal-body">
+                    <div class="form-group">
+                      <label for="patientlist">Patient List View Name</label>
+                      <input type="text" class="form-control" id="patientlist">
+                    </div>
+                </div>
+				<div class="modal-footer">
+                    <button type="button" class="btn leaf-btn-default pull-left" data-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn leaf-btn-warning" data-dismiss="modal" id="btn-savePatientList-delete">Delete</button>
+                    <button type="button" class="btn leaf-btn-default" data-dismiss="modal" id="btn-savePatientList-new">Save as New Template</button>
+					<button type="button" class="btn leaf-btn-default" data-dismiss="modal" id="btn-savePatientList">Save</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+
+            <div class="modal fade modal-centered" id="modal-patientlist" data-backdrop="false">
+                  <div class="modal-dialog">
+                    <div class="modal-content">
+                      <div class="modal-header">
+                        <h4 class="modal-title">Patient List Datasets</h4>
+                      </div>
+                      <div class="modal-body container-fluid">
+                          <div class="row">
+                              <div class="col-lg-9 col-md-9">
+                                <input id="search-patientlist" class="form-control" placeholder="Search Datasets">
+                              </div>
+                              <div class="col-lg-3 col-md-3">
+                                  <p>Selected Datasets</p>
+                              </div>
+                          </div>
+                          <div class="row">
+                              <div class="col-lg-9 col-md-9">
+                                <div id="patientlist-tree"></div>
+                              </div>
+                              <div class="col-lg-3 col-md-3" id="patientlist-selected">
+                              </div>
+                          </div>
+                      </div>
+                      <div class="modal-footer">
+                            <button type="button" class="btn leaf-btn-default pull-left" data-dismiss="modal">Cancel</button>
+                            <button type="button" class="btn leaf-btn-primary" id="btn-patientlist-update">Update Patient List</button>
+                      </div>
+      </div>
+      <!-- /.modal-content -->
+    </div>
+    <!-- /.modal-dialog -->
+  </div>
+  <!-- /.modal -->
+
+            <div class="modal fade modal-centered" id="modal-confirmation" data-backdrop="false">
+                  <div class="modal-dialog">
+                    <div class="modal-content">
+                      <div class="modal-header">
+                        <h4 class="modal-title"></h4>
+                      </div>
+                      <div class="modal-body">
+                        <p></p>
+                      </div>
+                      <div class="modal-footer">
+                            <button type="button" class="btn leaf-btn-default pull-left" data-dismiss="modal">Cancel</button>
+                            <button type="button" class="btn leaf-btn-default" id="btn-confirm-no">Don't Save</button>
+                            <button type="button" class="btn leaf-btn-default" id="btn-confirm-yes">Save</button>
+                      </div>
+      </div>
+      <!-- /.modal-content -->
+    </div>
+    <!-- /.modal-dialog -->
+  </div>
+  <!-- /.modal -->
+
+                <div class="modal fade modal-centered" id="processing-modal" data-backdrop="false">
+                  <div class="modal-dialog">
+                    <div class="modal-content">
+                      <div class="modal-header">
+                        <h4 class="modal-title">CSV Download</h4>
+                      </div>
+                      <div class="modal-body">
+                        <p></p>
+                          <div class="progress">
+                              <div class="progress-bar progress-bar-striped active" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%">
+                              </div>
+                            </div>
+                      </div>
+      </div>
+      <!-- /.modal-content -->
+    </div>
+    <!-- /.modal-dialog -->
+  </div>
+  <!-- /.modal -->
+
+            <div class="modal fade modal-centered" id="modal-message" data-backdrop="false">
+                  <div class="modal-dialog">
+                    <div class="modal-content">
+                      <div class="modal-header">
+                        <h4 class="modal-title"></h4>
+                      </div>
+                      <div class="modal-body">
+                        <p></p>
+                      </div>
+                    <div class="modal-footer">
+                       <button type="button" class="btn leaf-btn-default" data-dismiss="modal">OK</button>
+                    </div>
+      </div>
+      <!-- /.modal-content -->
+    </div>
+    <!-- /.modal-dialog -->
+  </div>
+  <!-- /.modal -->
+
+            
+            <div class="modal fade" id="modal-save-query" tabindex="-1" role="dialog" aria-labelledby="modal_login" data-backdrop="false">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3 class="modal-title">Save Query</h3>
+                        </div>
+                        <div class="modal-body">
+                            <div class="container-fluid">
+                                <div class="row">
+                                        <p>Saving a Leaf Query allows you to find, reopen, and edit it anytime via the MyLeaf window. The patients
+                                            found in your query will also become their own Leaf Concept, which you can find in the Concept List
+                                            under the <strong>My Saved Cohorts</strong> folder.
+                                        </p>
+                                </div>
+                                <div class="row">
+                                    <div class="col-lg-7 col-md-7">
+                                         <form>
+                                              <div class="form-group">
+                                                <label for="query-name" class="control-label">Query Name
+                                                    <span class="required">*</span>
+                                                </label>
+                          <input type="text" class="form-control" id="query-name" placeholder="e.g. Inclusion criteria or Patients with diagnosis X">
+                                              </div>
+                                              <div class="form-group">
+                                                <label for="query-category" class="control-label">Category
+                                                    <span class="required">*</span>
+                                                </label>
+                          <input type="text" class="form-control typeahead" id="query-category" placeholder="e.g. IRB 12345">
+                                              </div>
+                                              <div class="form-group">
+                                                <label for="query-description" class="control-label">Description</label>
+                                                <textarea class="form-control" id="query-description" rows="5" placeholder="What criteria are used, or what question does this answer?"></textarea>
+                                              </div>
+                                        </form>
+                                        <span class="required">*Required Field. Limit 30 characters.</span>
+                                    </div>
+                                    <div class="col-lg-5 col-md-5">
+                                        <div id="query-previewtree-wrapper">
+                                            <div id="query-previewtree">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="pull-left btn leaf-btn-default" data-dismiss="modal" id="btn-cancel-query" data-dismiss="modal">Cancel</button>
+                            <button type="button" class="btn leaf-btn-default" id="btn-save-querynew">Save as New Query</button>
+                            <button type="button" class="btn leaf-btn-primary" id="btn-save-query" disabled="disabled">Save</button>
+                    </div>
+                </div>
+            </div>
+       </div>
+	  
+       <!-- UserOptions Modal -->
+       <div class="modal fade" id="modal-myleaf" tabindex="-1" role="dialog" data-backdrop="false" data-keyboard="false" data-show="false">
+         <div class="modal-dialog modal-lg" role="document">
+           <div class="modal-content">
+               <div class="modal-header">
+                   <button type="button" class="close" style="font-size: 21px" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                   <h3 class="modal-title">MyLeaf</h3>
+               </div>
+               <div class="modal-body">
+                   <!-- Nav tabs -->
+                  <ul class="nav nav-tabs" role="tablist">
+                    <li role="presentation" class="active">
+                        <a href="#myqueries" aria-controls="profile" role="tab" data-toggle="tab">
+                            <span class="glyphicon glyphicon-search"></span>My Queries
+							<span id="popoverHelpMyLeaf_MyQueries" class="glyphicon glyphicon-question-sign question-marks"></span>
+                        </a>
+                    </li>
+                    <li role="presentation">
+                        <a href="#rcimport" aria-controls="messages" role="tab" data-toggle="tab">
+                            <span class="glyphicon glyphicon-cloud-download"></span>My Imported REDCap Projects
+							<span id="popoverHelpMyLeaf_MyImported" class="glyphicon glyphicon-question-sign question-marks"></span>
+                        </a>
+                    </li>
+                  </ul>
+                  <!-- Tab panes -->
+                  <div class="tab-content">
+                    <div role="tabpanel" class="tab-pane active in fade" id="myqueries">
+                        <div class="modal-header">
+                <div class="form-inline">
+                                <div>
+                    <input type="search" class="form-control" id="search-myqueries" placeholder="Search Queries..." />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div id="myqueries-table-wrapper" class="col-md-12 col-lg-12">
+                                    
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div role="tabpanel" class="tab-pane fade" id="rcimport">
+                        <div class="modal-header">
+                <div class="form-inline">
+                                <div>
+                                    <label class="sr-only" for="rcimport-projects-search">Search</label>
+                    <input type="search" class="form-control" id="rcimport-projects-search" placeholder="Search Projects..." />
+									<div class="pull-right">
+								        <span id="popoverHelpMyLeaf_ImportProj" class="glyphicon glyphicon-question-sign question-marks"></span>
+	                                    <button type="button" class="btn leaf-btn-primary" id="btn-rcimport-newproject">
+                        <span class="glyphicon glyphicon-plus"></span> Import New Project
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        </div>
+                        <div class="row">
+                            <div id="myrcimports-table-wrapper" class="col-md-12 col-lg-12">
+                                    
+                            </div>
+                        </div>
+                    </div>
+                </div>
+               </div>
+               <div class="modal-footer">
+                   <button type="button" class="btn leaf-btn-default" data-dismiss="modal">Close</button>
+               </div>
+            </div>
+          </div>
+        </div>
+          
+         <div class="modal fade" id="modal-frequent" tabindex="-1" role="dialog" data-backdrop="false" data-keyboard="false" data-show="false">
+         <div class="modal-dialog modal-lg" role="document">
+           <div class="modal-content">
+               <div class="modal-header">
+                   <button type="button" class="close" style="font-size: 21px" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+                   <h3 class="modal-title">Frequent asked questions</h3>
+               </div>
+               <div class="modal-body">
+                  
+					
+					 <div class="panel-group" id="accordion">
+						<div class="panel panel-default">
+						  <div class="panel-heading">
+							<h4 class="panel-title">
+							  <div data-toggle="collapse" data-parent="#accordion" href="#collapse1">How far back does the data go?</div>
+							</h4>
+						  </div>
+						  <div id="collapse1" class="panel-collapse collapse in">
+                <div class="panel-body">
+                  <p>Data goes back to 2014, except for Labs, which goes back to 1997.</p>
+                  <p></p>
+						  </div>
+						</div>
+            </div>
+						<div class="panel panel-default">
+						  <div class="panel-heading">
+							<h4 class="panel-title">
+							  <div data-toggle="collapse" data-parent="#accordion" href="#collapse2">How can I get help?</div>
+							</h4>
+						  </div>
+						  <div id="collapse2" class="panel-collapse collapse">
+                <div class="panel-body">
+                  <p>You can ask questions through <a href="https://is.gd/LeafAdvisorFeedback" target="_blank">REDCap</a>. Leaf Administrators will respond to your question in two business days.</p>
+                  <p></p>
+						  </div>
+						</div>
+            </div>
+						<div class="panel panel-default">
+						  <div class="panel-heading">
+							<h4 class="panel-title">
+							  <div data-toggle="collapse" data-parent="#accordion" href="#collapse3">What does "in the Same Episode of Care" mean?</div>
+							</h4>
+						  </div>
+						  <div id="collapse3" class="panel-collapse collapse">
+                <div class="panel-body">
+                  <p>"And in the Same Episode of Care" connects two concepts by their encounter ID, which means the two concepts happen in the same visit. </p>
+                  <p>
+                  </p>
+                  <p>For example, patients who have lab results for the WBC test, <strong>and in the same episode of care</strong> are diagnosed with Enterogastris are different with patients who have lab results of WBC "And" are diagnosed Enterogastris,
+                    which means Enterogastris patients who have had WBC tests in any given time. </p>
+                  <p>
+                  </p>
+                  <p>Concepts like "Demographics" and "My saved queries" are associated with person and do not have encounter IDs. Querying concepts without an encounter ID in the same episode of care may return confusing results.</p>
+                  <p>
+
+                  </p>
+						  </div>
+						</div>
+            </div>
+                         <div class="panel panel-default">
+						  <div class="panel-heading">
+							<h4 class="panel-title">
+							  <div data-toggle="collapse" data-parent="#accordion" href="#collapse4">Is there a place that lists your queries?</div>
+							</h4>
+						  </div>
+						  <div id="collapse4" class="panel-collapse collapse">
+                <div class="panel-body">
+                  <p>Yes, there is! Your query will be saved in the "My Leaf" section on the navigation bar and in the Concept List. </p>
+                  <p>
+                  </p>
+                  <p>You can also save your query use “save query” button in the dropdown list of "New Query" menu.</p>
+                  <p></p>
+						  </div>
+						</div>
+            </div>
+                         <div class="panel panel-default">
+						  <div class="panel-heading">
+							<h4 class="panel-title">
+							  <div data-toggle="collapse" data-parent="#accordion" href="#collapse5">How do I use logical "OR"?</div>
+							</h4>
+						  </div>
+						  <div id="collapse5" class="panel-collapse collapse">
+                <div class="panel-body">
+                  <p>The "—or—" tag will show up when you drag over the multiple concepts in the same query box.</p>
+                  <p></p>
+						  </div>
+						</div>
+            </div>
+                         <div class="panel panel-default">
+						  <div class="panel-heading">
+							<h4 class="panel-title">
+							  <div data-toggle="collapse" data-parent="#accordion" href="#collapse6">Is there a glossary of terms available under each of the categories?</div>
+							</h4>
+						  </div>
+						  <div id="collapse6" class="panel-collapse collapse">
+                <div class="panel-body">
+                  <p>There is no such a glossary. Instead, you can either open the concept tree or use the search box to look for concepts.</p>
+                  <p>
+                  </p>
+                  <p>For example, searching for diagnostic terms by ICD-9 or ICD-10 code will be much easier due to the large number of items in each terminology.</p>
+                  <p></p>
+						  </div>
+						</div>
+            </div>
+                         <div class="panel panel-default">
+						  <div class="panel-heading">
+							<h4 class="panel-title">
+							  <div data-toggle="collapse" data-parent="#accordion" href="#collapse7">What is the meaning of the numbers beside the little green man?</div>
+							</h4>
+						  </div>
+						  <div id="collapse7" class="panel-collapse collapse">
+                <div class="panel-body">
+                  <p>The little green man is an estimated count of patients within a given concept. </p>
+                  <p>
+                  </p>
+                  <p>However, these numbers are periodically generated snapshots and may not be exactly equal to real-time numbers.</p>
+                  <p>
+                  </p>
+						  </div>
+						</div>
+            </div>
+                       
+                         <div class="panel panel-default">
+						  <div class="panel-heading">
+							<h4 class="panel-title">
+							  <div data-toggle="collapse" data-parent="#accordion" href="#collapse9">What is the difference between "Diagnoses" and "Problem List"?  </div>
+							</h4>
+						  </div>
+						  <div id="collapse9" class="panel-collapse collapse">
+                <div class="panel-body">
+                  <p>Problem lists are populated with confirmed diagnoses entered by providers.</p>
+                  <p>
+                  </p>
+                  <p>Diagnoses are usually generated from billing system. They may represent real or suspected diagnoses. </p>
+                  <p>
+                  </p>
+                  <p>For example, a patient who has a diagnosis of Tuberculosis in the concept "Diagnoses" may just have been billed for Tuberculosis screenings instead of actually having the disease.</p>
+                  <p>
+                  </p>
+                </div>
+						  </div>
+						</div>
+                         <div class="panel panel-default">
+						  <div class="panel-heading">
+							<h4 class="panel-title">
+							  <div data-toggle="collapse" data-parent="#accordion" href="#collapse10">Can I exclude certain criteria from my query?</div>
+							</h4>
+						  </div>
+						  <div id="collapse10" class="panel-collapse collapse">
+                <div class="panel-body">
+                  <p>There are two ways of doing this:</p>
+                  <p>
+                  </p>
+                  <p>First drag over the concept you want to exclude, then either</p>
+                  <p>
+                  </p>
+                  <p>-changing query box header to "Not Patients Who" or "And Not",</p>
+                  <p>
+                  </p>
+                  <p>-or left click the concept in box and choose "Exclude" in dropdown menu.</p>
+                  <p>
+                                
+                  </p>
+                </div>
+						  </div>
+						</div>
+                         <div class="panel panel-default">
+						  <div class="panel-heading">
+							<h4 class="panel-title">
+							  <div data-toggle="collapse" data-parent="#accordion" href="#collapse11">If I want to filter patients with diagnostic code, do I need to use both ICD-9 and ICD-10?</div>
+							</h4>
+						  </div>
+						  <div id="collapse11" class="panel-collapse collapse">
+                <div class="panel-body">
+                  <p>It depends on how far back you want to your query to go.</p>
+                  <p>
+                  </p>
+                  <p>If you are looking for patients in the short term, ICD-10 will be fine;</p>
+                  <p>
+                  </p>
+                  <p>If you are looking for patients ina longer period of time, you will need to put in both ICD-9 and ICD-10.</p>
+                  <p>
+                  </p>
+                </div>
+						  </div>
+						</div>
+
+					  </div> 
+               </div>
+               <div class="modal-footer">
+                   <button type="button" class="btn leaf-btn-default" data-dismiss="modal">Close</button>
+               </div>
+            </div>
+          </div>
+        </div>
+          
+                    
+            <div class="modal fade" id="modal-login" tabindex="-1" role="dialog" aria-labelledby="modal_login">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header" id="splash-leaf-logo">
+          <span class="glyphicon glyphicon-leaf"></span> Leaf
+                                <span class="navtop-subtext">Clinical Data Explorer</span>
+                            <a href="#" class="pull-right" id="splash-uw-logo">
+                                UW Medicine
+                            </a>
+                        </div>
+                        <div class="modal-body">
+                            <div class="carousel slide" id="login-carousel">
+                                <div class="carousel-inner">
+                                    <div class="item active" id="login-carousel-options">
+                <div class="login-section" id="login-loading">
+                    <div id="login-loading-deidentified" class="bg-warning" style="display:none">  
+                        Note: Patient data restricted to De-Identified mode only
+                    </div>
+                    <span id="login-loading-ajax">
+                                                  <img src="gif/leafajax_40124.gif" alt="" />
+                                                  Loading user options...
+                                              </span>
+                </div>
+                <div class="login-section" id="login-sessiontype" style="display:none;">
+							                <h4>
+                                                I want to find information for
+												 <span id="popoverHelpLogin_QIRschOther" data-toggle="collapse" href="#popoverHelpLogin_QIRschOther_div" class="glyphicon glyphicon-question-sign question-marks"></span>
+							                </h4>
+											<div class="collapse well" id="popoverHelpLogin_QIRschOther_div">
+											<ul>
+											<li>In Research mode, patients who have been asked to consent to their data being used for research and answered 'no' will be filtered out and unavailable.</li>
+											<li>In both Research and Quality Improvement modes, you will subsequently be asked to provide details on approved documentation for your use.</li>
+											<li>If you don’t have any documentation, you will be restricted to viewing de-identified data.</li>
+											<li>If you feel that neither of these options are appropriate to your use, you may choose 'Other', and you will then be asked to provide details of your use case.</li>
+											</ul>
+											</div>
+                                            <div id="btn-login-sessiontype" class="btn-group btn-group-justified" data-toggle="buttons">
+                                              <label class="btn leaf-btn-login leaf-btn-default">
+                                                <input value="QI" type="radio" name="options" autocomplete="off" checked> Quality Improvement
+                                              </label>
+                                              <label class="btn leaf-btn-login leaf-btn-default">
+                                                <input value="Research" type="radio" name="options" autocomplete="off"> Research
+                                              </label>
+                                              <label class="btn leaf-btn-login leaf-btn-default">
+                                                <input value="Other" type="radio" name="options" autocomplete="off"> Other
+                                              </label>
+                                            </div>                     
+                                        </div> 
+                                    </div>
+                                    <div class="item">
+                                        <div>
+                                            <span id="login-accessmode">ACCESS MODE:</span>
+                                            <span id="login-usetype"></span>
+                                        </div>
+                <p> I attest that the information I have entered is accurate to the best of my knowledge, and that my use of the application, Leaf, will follow the purpose I have indicated. If I am viewing UW Medicine clinical data in a de-identified mode,
+                  I will not attempt to identify individuals or groups of patients, and will not share data outside of UW Medicine without approval.
+                                        </p>
+                                        <div class="modal-footer">
+                                            <span class="pull-right" id="login-status"></span>
+                                            <span class="ajax-loader" id="ajax-load-login">
+                                                  <img style="margin-top:10px" src="gif/leafajax_40124.gif" alt="" />
+                                              </span>
+                                            <button type="button" class="btn leaf-btn-default pull-left" id="btn-login-goback">Go Back</button>
+                                            <button type="button" class="btn leaf-btn-primary" id="btn-login-consent">I Agree</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>  
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="container-fluid" id="splash-background">
+            </div>
+                
+            <nav id="navtop" class="navbar navbar-fixed-top" role="navigation">
+    <div id="navtop-above">
+                <div class="dropdown navbar-text" id="current-query-name">
+                    <!--<a class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <span class="glyphicon glyphicon-user"></span>-->
+                      <strong>New Query</strong>
+                    <ul class="dropdown-menu" aria-labelledby="dropdownMenu2">
+                      <li value="1">
+                          <a>Save</a>
+                      </li>
+                      <li value="0">
+                          <a>New Query</a>
+                      </li>
+                    </ul>
+                  </div>
+                <p class="navbar-text" id="totalCount"></p>
+                <div class="collapse navbar-collapse">
+                      <ul class="nav navbar-nav navbar-right">
+          <li>
+            <a id="tab-find-patients" class="carousel-button carousel-button-selected" data-target="#resultCarousel" data-slide-to="0">
+                            <span class="glyphicon glyphicon-edit"></span>Find Patients
+                            </a>
+                        </li>
+          <li>
+            <a class="carousel-button-placeholder">
+                            <span class="glyphicon glyphicon-stats"></span>Visualize
+                            </a>
+                        </li>
+          <li>
+            <a class="carousel-button-placeholder">
+                            <span class="glyphicon glyphicon-list-alt"></span>Patient List
+                            </a>
+                        </li>
+          <li>
+            <a id="tab-visualize" class="carousel-button carousel-button-toggle" data-target="#resultCarousel" data-slide-to="1">
+                            <span class="glyphicon glyphicon-stats"></span>Visualize
+                            </a>
+                        </li>
+          <li>
+            <a id="tab-patient-list" class="carousel-button carousel-button-toggle" data-target="#resultCarousel" data-slide-to="2">
+                            <span class="glyphicon glyphicon-list-alt"></span>Patient List
+                            </a>
+                        </li>
+                      </ul>
+                </div>
+              </div>
+              <div id="navtop-below">
+                    <span id="logo-wrapper">
+                        <span class="glyphicon glyphicon-leaf"></span>Leaf
+                        <span class="navtop-subtext">Clinical Data Explorer v1.7</span>
+                    </span>
+                    <span id="navtop-below-options">
+                        <a id="options-newquery" class="nav-options" class="carousel-button" data-target="#resultCarousel" data-slide-to="0">Start New Query
+                        </a>
+                        <!--<a id="options-openquery" class="nav-options">Open Saved Query
+                        </a>-->
+                        <a id="btn-myleaf" class="nav-options">
+                            <span class="glyphicon glyphicon-leaf"></span>MyLeaf
+                        </a>
+                        <a id="btn-frequent" class="nav-options">FAQ
+                        </a>
+                        <a id="btn-contactus" class="nav-options" href="https://is.gd/LeafAdvisorFeedback" target="_blank">Feedback
+                        </a>
+                        <!--<a class="nav-options">
+                            <span class="glyphicon glyphicon-comment"></span>Questions/Comments/Requests
+                        </a>-->
+                    </span>
+                    <p class="navbar-text navbar-right" style="margin-right:50px">
+                        Signed in as 
+                        <a id="user-name" class="navbar-link"></a>
+                        for
+                        <a id="session-type" class="navbar-link"></a>
+                    </p>    
+              </div>
+            </nav>
+            
+             <a href="#" class="go-top">Back to Top</a>
+            <nav id="navbottom" class="navbar navbar-default navbar-fixed-bottom">
+                <div class="navbar-header">
+                    <a class="navbar-brand" href="#">
+                        <img src="gif/ITHSlogo.gif" alt="" />
+                    </a>
+                </div>
+                <span class="navbar-right navbar-link">Powered by UW Medicine Research IT & UW Medicine Analytics</span>
+            </nav>
+            
+
+            <div class="container-fluid" style="margin-bottom:50px">
+                <div id="resultCarousel" class="carousel slide">
+                    <div class="carousel-inner">
+                            <div class="item carousel-item active" data-slide-no="0">
+                            <div class="col-lg-5 col-md-5">
+                                <div class="page-header">
+                                    <div class="row">
+                                        <div class="col-lg-3">
+	                                        <h3>Concept List</h3>
+                                        </div>
+                                        <div class="col-lg-8">
+                                            <div class="input-group">
+                                              <div class="input-group-btn" id="concept-list-btn-group">
+                                                <button type="button" id="concept-list-btn" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">All Concepts<span class="caret"></span></button>
+                                                <ul class="dropdown-menu">
+                                                  <li value="0"><a>All Concepts</a></li>
+                                                  <li role="separator" class="divider"></li>
+                                                </ul>
+                    </div>
+                    <!-- /btn-group -->
+                    <input type="search" id="conceptSearch" class="form-control" placeholder="Search" />
+                  </div>
+                  <!-- /input-group -->
+                                        </div>
+                                        <div class="col-lg-1">
+                                            <span class="ajax-loader" id="ajax-load-search">
+                                                <img src="gif/leafajax_40124.gif" alt="" />
+                                              </span>
+                                        </div>
+                                    </div>
+                                    <small>Click and drag concepts to the panels on the right to create a query</small>
+        <span id="popoverHelpConceptList" class="glyphicon glyphicon-question-sign question-marks"></span>
+
+                                </div>
+                                <div id="code-equivalent-wrapper"></div>
+                                <div id="list-parent" class="conceptList-container"></div>
+                                <div id="list-search" class="conceptList-container"></div>
+
+                                
+                            </div>
+                            <div class="col-lg-7 col-md-7">
+                                    <div class="page-header">
+                                        <div class="row">
+                                            <div class="col-lg-4">
+                                                <h3>Query Criteria
+                                                </h3>
+                                                <small>Drag concepts to the panels below</small>
+                                                <span id="popoverHelpQueryCriteria" class="glyphicon glyphicon-question-sign question-marks"></span>
+                                            </div>
+                                            <div class="col-lg-8">
+                                                <button type="button" class="btn btn-primary leaf-btn-main" id="get-count"><span class="glyphicon glyphicon-search" style="color: white; margin-right:8px;font-size:18px"></span>Run Query</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="btn-options">
+                                        <button id="btn-options-button">
+										Filters:
+                                            <span class="caret"></span>
+										
+											<span id="popoverHelpLogin_Filters" class="glyphicon glyphicon-question-sign question-marks"></span>
+                                        </button>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="panel panel-default" id="panel0">
+                                            <div class="panel-heading">
+                                                <div class="dropdown in-filter">
+                                                  <a class="dropdown-toggle main-header" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                    Patients Who
+                                                    <span class="caret"></span>
+                                                  </a>
+                                                  <ul class="dropdown-menu" aria-labelledby="dropdownMenu2">
+                                                    <li value="1"><a>Patients Who</a></li>
+                                                    <li value="0"><a>Not Patients Who</a></li>
+                                                  </ul>
+                                                </div>
+                                                <div class="dropdown date-filter">
+                                                  <a class="dropdown-toggle" id="datedropdown0" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                    Anytime
+                                                    <span class="caret"></span>
+                                                  </a>
+                                                  <ul class="dropdown-menu" aria-labelledby="dropdownMenu2">
+                      <li value=""><a>Anytime</a></li>
+                                                    <li role="seperator" class="divider"></li>
+                                                    <li class="dropdown-submenu">
+													<a class="show-custom-range">Custom Date Range</a>
+													  <ul class="dropdown-menu">
+                                                        <li class="custom-range-box">
+                                                                <div class="form-group">
+                                                                    <div class="row">
+                                                                        <div class="col-md-6">
+                                                                            <div class="form-group has-feedback">
+                                                                                <label class="control-label" for="custom-startdate1">From this date</label>
+                                                                                <input type="text" id="custom-startdate1" class="custom-date-input form-control start-date" placeholder="MM/DD/YYYY" data-picker="0">
+                                                                                <span class="glyphicon form-control-feedback" aria-hidden="true"></span>
+                                                                    </div>
+                                                                </div> 
+                                                                        <div class="col-md-6">
+                                                                            <div class="form-group has-feedback">
+                                                                                <label class="control-label" for="custom-finishdate1">Until this date</label>
+                                                                                <input type="text" id="custom-finishdate1" class="custom-date-input form-control end-date" placeholder="MM/DD/YYYY" data-picker="1">
+                                                                                <span class="glyphicon form-control-feedback" aria-hidden="true"></span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                                    <div class="row">
+                                                                        <div class="col-md-6">
+                                                                            <div class="datetimepicker" data-input="0"></div>
+                                                                        </div>
+                                                                        <div class="col-md-6">
+                                                                            <div class="datetimepicker" data-input="1"></div>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="row">
+                                                                        <button class="btn leaf-btn-primary add-date-filter pull-right" type="button">Add Date Filter</button>
+                                                                    </div>
+                                                                </div>
+                                                        </li>
+                                                  </ul>
+													</li>
+                                                    <li role="seperator" class="divider"></li>
+                                                    <li value="DATEADD(HOUR,-24,GETDATE())"><a>In Past 24 Hours</a></li>
+                                                    <li value="DATEADD(HOUR,-48,GETDATE())"><a>In Past 48 Hours</a></li>
+                                                    <li value="DATEADD(HOUR,-72,GETDATE())"><a>In Past 72 Hours</a></li>
+                                                    <li value="DATEADD(DAY,-7,GETDATE())"><a>In Past 7 Days</a></li>
+                                                    <li value="DATEADD(DAY,-30,GETDATE())"><a>In Past 30 Days</a></li>
+                                                    <li value="DATEADD(MONTH,-6,GETDATE())"><a>In Past 6 Months</a></li>
+                                                    <li value="DATEADD(MONTH,-12,GETDATE())"><a>In Past 12 Months</a></li>
+                                                    <li value="DATEADD(YEAR,-2,GETDATE())"><a>In Past 2 Years</a></li>
+                                                    <li value="DATEADD(YEAR,-3,GETDATE())"><a>In Past 3 Years</a></li>
+                                                    <li role="seperator" class="divider"></li>
+                                                    <li value="DATEADD(DAY,10,GETDATE())"><a>In Next 10 Days</a></li>
+                                                    <li value="DATEADD(MONTH,1,GETDATE())"><a>In Next Month</a></li>
+                                                    <li value="DATEADD(MONTH,6,GETDATE())"><a>In Next 6 Months</a></li>
+                                                  </ul>
+                                                </div>
+                                                <div class="dropdown count-filter">
+                                                    <a class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                    At Least 1x
+                                                    <span class="caret"></span>
+                                                  </a>
+                                                  <ul class="dropdown-menu" aria-labelledby="dropdownMenu2">
+                      <li value="1"><a>1x</a></li>
+                      <li value="2"><a>2x</a></li>
+                      <li value="3"><a>3x</a></li>
+                      <li value="4"><a>4x</a></li>
+                      <li value="5"><a>5x</a></li>
+                      <li value="6"><a>6x</a></li>
+                      <li value="7"><a>7x</a></li>
+                      <li value="8"><a>8x</a></li>
+                      <li value="9"><a>9x</a></li>
+                      <li value="10"><a>10x</a></li>
+                                                  </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="panel panel-default" id="panel1">
+                                            <div class="panel-heading">
+                                                <div class="dropdown in-filter">
+                                                  <a class="dropdown-toggle main-header" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                    And
+                                                    <span class="caret"></span>
+                                                  </a>
+                                                  <ul class="dropdown-menu" aria-labelledby="dropdownMenu2">
+                      <li value="1"><a>And</a></li>
+                                                    <li value="0"><a>And Not</a></li>
+                                                  </ul>
+                                                </div>
+                                                <div class="dropdown date-filter">
+                                                  <a class="dropdown-toggle" id="A1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                    Anytime
+                                                    <span class="caret"></span>
+                                                  </a>
+                                                  <ul class="dropdown-menu" aria-labelledby="dropdownMenu2">
+                      <li value=""><a>Anytime</a></li>
+                                                    <li role="seperator" class="divider"></li>
+                                                    <li class="dropdown-submenu">
+													<a class="show-custom-range">Custom Date Range</a>
+													  <ul class="dropdown-menu">
+                                                        <li class="custom-range-box">
+                                                            <div class="form-group">
+                                                                    <div class="row">
+                                                                        <div class="col-md-6">
+                                                                            <div class="form-group has-feedback">
+                                                                                <label class="control-label" for="custom-startdate2">From this date</label>
+                                                                                <input type="text" id="custom-startdate2" class="custom-date-input form-control start-date" placeholder="MM/DD/YYYY" data-picker="0">
+                                                                                <span class="glyphicon form-control-feedback" aria-hidden="true"></span>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div class="col-md-6">
+                                                                            <div class="form-group has-feedback">
+                                                                                <label class="control-label" for="custom-finishdate2">Until this date</label>
+                                                                                <input type="text" id="custom-finishdate2" class="custom-date-input form-control end-date" placeholder="MM/DD/YYYY" data-picker="1">
+                                                                                <span class="glyphicon form-control-feedback" aria-hidden="true"></span>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="row">
+                                                                        <div class="col-md-6">
+                                                                            <div class="datetimepicker" data-input="0"></div>
+                                                                    </div>
+                                                                        <div class="col-md-6">
+                                                                            <div class="datetimepicker" data-input="1"></div>
+                                                                </div> 
+                                                                    </div>
+                                                                    <div class="row">
+                                                                        <button class="btn leaf-btn-primary add-date-filter pull-right" type="button">Add Date Filter</button>
+                                                                </div>
+                                                            </div>
+                                                        </li>
+                                                  </ul>
+													</li>
+                                                    <li role="seperator" class="divider"></li>
+                                                    <li value="DATEADD(HOUR,-24,GETDATE())"><a>In Past 24 Hours</a></li>
+                                                    <li value="DATEADD(HOUR,-48,GETDATE())"><a>In Past 48 Hours</a></li>
+                                                    <li value="DATEADD(HOUR,-72,GETDATE())"><a>In Past 72 Hours</a></li>
+                                                    <li value="DATEADD(DAY,-7,GETDATE())"><a>In Past 7 Days</a></li>
+                                                    <li value="DATEADD(DAY,-30,GETDATE())"><a>In Past 30 Days</a></li>
+                                                    <li value="DATEADD(MONTH,-6,GETDATE())"><a>In Past 6 Months</a></li>
+                                                    <li value="DATEADD(MONTH,-12,GETDATE())"><a>In Past 12 Months</a></li>
+                                                    <li value="DATEADD(YEAR,-2,GETDATE())"><a>In Past 2 Years</a></li>
+                                                    <li value="DATEADD(YEAR,-3,GETDATE())"><a>In Past 3 Years</a></li>
+                                                    <li role="seperator" class="divider"></li>
+                                                    <li value="DATEADD(DAY,10,GETDATE())"><a>In Next 10 Days</a></li>
+                                                    <li value="DATEADD(MONTH,1,GETDATE())"><a>In Next Month</a></li>
+                                                    <li value="DATEADD(MONTH,6,GETDATE())"><a>In Next 6 Months</a></li>
+                                                  </ul>
+                                                </div>
+                                                <div class="dropdown count-filter">
+                                                    <a class="dropdown-toggle" id="A4" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                    At Least 1x
+                                                    <span class="caret"></span>
+                                                  </a>
+                                                  <ul class="dropdown-menu" aria-labelledby="dropdownMenu2">
+                      <li value="1"><a>1x</a></li>
+                      <li value="2"><a>2x</a></li>
+                      <li value="3"><a>3x</a></li>
+                      <li value="4"><a>4x</a></li>
+                      <li value="5"><a>5x</a></li>
+                      <li value="6"><a>6x</a></li>
+                      <li value="7"><a>7x</a></li>
+                      <li value="8"><a>8x</a></li>
+                      <li value="9"><a>9x</a></li>
+                      <li value="10"><a>10x</a></li>
+                                                  </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="panel panel-default" id="panel2">
+                                            <div class="panel-heading">
+                                                <div class="dropdown in-filter">
+                                                  <a class="dropdown-toggle main-header" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                    And
+                                                    <span class="caret"></span>
+                                                  </a>
+                                                  <ul class="dropdown-menu" aria-labelledby="dropdownMenu2">
+                      <li value="1"><a>And</a></li>
+                                                    <li value="0"><a>And Not</a></li>
+                                                  </ul>
+                                                </div>
+                                                <div class="dropdown date-filter">
+                                                  <a class="dropdown-toggle" id="A2" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                    Anytime
+                                                    <span class="caret"></span>
+                                                  </a>
+
+                                                  <ul class="dropdown-menu" aria-labelledby="dropdownMenu2">
+                      <li value=""><a>Anytime</a></li>
+                                                    <li role="seperator" class="divider"></li>
+                                                    <li class="dropdown-submenu">
+													<a class="show-custom-range">Custom Date Range</a>
+													  <ul class="dropdown-menu">
+                                                        <li class="custom-range-box">
+                                                            <div class="form-group">
+                                                                    <div class="row">
+                                                                        <div class="col-md-6">
+                                                                            <div class="form-group has-feedback">
+                                                                                <label class="control-label" for="custom-startdate3">From this date</label>
+                                                                                <input type="text" id="custom-startdate3" class="custom-date-input form-control start-date" placeholder="MM/DD/YYYY" data-picker="0">
+                                                                                <span class="glyphicon form-control-feedback" aria-hidden="true"></span>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div class="col-md-6">
+                                                                            <div class="form-group has-feedback">
+                                                                                <label class="control-label" for="custom-finishdate3">Until this date</label>
+                                                                                <input type="text" id="custom-finishdate3" class="custom-date-input form-control end-date" placeholder="MM/DD/YYYY" data-picker="1">
+                                                                                <span class="glyphicon form-control-feedback" aria-hidden="true"></span>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="row">
+                                                                        <div class="col-md-6">
+                                                                            <div class="datetimepicker" data-input="0"></div>
+                                                                    </div>
+                                                                        <div class="col-md-6">
+                                                                            <div class="datetimepicker" data-input="1"></div>
+                                                                </div> 
+                                                                    </div>
+                                                                    <div class="row">
+                                                                        <button class="btn leaf-btn-primary add-date-filter pull-right" type="button">Add Date Filter</button>
+                                                                </div>
+                                                            </div>
+                                                        </li>
+                                                  </ul>
+													</li>
+                                                    <li role="seperator" class="divider"></li>
+                                                    <li value="DATEADD(HOUR,-24,GETDATE())"><a>In Past 24 Hours</a></li>
+                                                    <li value="DATEADD(HOUR,-48,GETDATE())"><a>In Past 48 Hours</a></li>
+                                                    <li value="DATEADD(HOUR,-72,GETDATE())"><a>In Past 72 Hours</a></li>
+                                                    <li value="DATEADD(DAY,-7,GETDATE())"><a>In Past 7 Days</a></li>
+                                                    <li value="DATEADD(DAY,-30,GETDATE())"><a>In Past 30 Days</a></li>
+                                                    <li value="DATEADD(MONTH,-6,GETDATE())"><a>In Past 6 Months</a></li>
+                                                    <li value="DATEADD(MONTH,-12,GETDATE())"><a>In Past 12 Months</a></li>
+                                                    <li value="DATEADD(YEAR,-2,GETDATE())"><a>In Past 2 Years</a></li>
+                                                    <li value="DATEADD(YEAR,-3,GETDATE())"><a>In Past 3 Years</a></li>
+                                                    <li role="seperator" class="divider"></li>
+                                                    <li value="DATEADD(DAY,10,GETDATE())"><a>In Next 10 Days</a></li>
+                                                    <li value="DATEADD(MONTH,1,GETDATE())"><a>In Next Month</a></li>
+                                                    <li value="DATEADD(MONTH,6,GETDATE())"><a>In Next 6 Months</a></li>
+                                                  </ul>
+                                                </div>
+                                                <div class="dropdown count-filter">
+                                                    <a class="dropdown-toggle" id="A5" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                    At Least 1x
+                                                    <span class="caret"></span>
+                                                  </a>
+                                                  <ul class="dropdown-menu" aria-labelledby="dropdownMenu2">
+                      <li value="1"><a>1x</a></li>
+                      <li value="2"><a>2x</a></li>
+                      <li value="3"><a>3x</a></li>
+                      <li value="4"><a>4x</a></li>
+                      <li value="5"><a>5x</a></li>
+                      <li value="6"><a>6x</a></li>
+                      <li value="7"><a>7x</a></li>
+                      <li value="8"><a>8x</a></li>
+                      <li value="9"><a>9x</a></li>
+                      <li value="10"><a>10x</a></li>
+                                                  </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                            </div>
+                         </div>
+                         <div class="item carousel-item" data-slide-no="1">
+                             <div class="container-fluid">
+                                 <div class='row visualization-row'>
+                                    <div class="col-lg-5 col-lg-offset-1 col-md-6" id="gender-chart-container">
+                                        <div class="page-header">
+                                            <h3>Current Age by Gender
+                                                <span class="ajax-loader-visualization">
+                                                  <img src="gif/leafajax_40124.gif" alt="" />
+                                              </span>
+                                            </h3>
+                                            <small>Source: Epic Clarity Data Warehouse, Epic ADT</small>
+                                        </div>
+                                        <div id="genderChart">
+                                            <span id="genderChart-stratified" class="chart-option option-selected">Stratified by Gender</span>
+                                            <span id="genderChart-stacked" class="chart-option">Stacked</span>
+                                            <span id="genderChart-pyramid" class="chart-option">Population Pyramid</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-5 col-md-6" id="binary-chart-container">
+                                        <div class="page-header">
+                                            <h3>At a Glance
+                                                <span class="ajax-loader-visualization">
+                                                  <img src="gif/leafajax_40124.gif" alt="" />
+                                              </span>
+                                            </h3>
+                                            <small>Source: Epic Clarity Data Warehouse, Epic ADT</small>
+                                        </div>
+                                        <div id="binaryChart">
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-1 col-md-0">
+                                    </div>
+		                        </div>
+                                 <div class='row visualization-row'>
+			                        <div class="col-lg-5 col-lg-offset-1 col-md-6" id="religion-chart-container">
+                                        <div class="page-header">
+                                            <h3>Religious Affiliation
+                                                <span class="ajax-loader-visualization">
+                                                  <img src="gif/leafajax_40124.gif" alt="" />
+                                              </span>                                       
+                                            </h3>
+                                            <small>Source: Epic Clarity Data Warehouse, Epic ADT</small>
+                                        </div>
+				                        <div id="religion-chart">
+                                            <span id="religion-chart-limit" class="chart-option option-selected">Show Top 20 Only</span>
+                                            <span id="religion-chart-nolimit" class="chart-option">Show All</span>
+                                        </div>
+                                    </div>
+			                        <div class="col-lg-5 col-md-6" id="employment-insurance-container">
+                                        <div class="page-header">
+                                            <h3>Insurance by Employment Status
+                                                <span class="ajax-loader-visualization">
+                                                 <img src="gif/leafajax_40124.gif" alt="" />
+                                              </span>
+                                            </h3>
+                                            <small>Source: Epic Clarity Data Warehouse</small>
+                                        </div>
+                                        <div id="employment-insurance-chart">
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-1 col-md-0">
+                                    </div>
+		                        </div>
+		                         <div class='row visualization-row'>
+			                        <div class="col-lg-5 col-lg-offset-1 col-md-6" id="location-chart-container">
+                                        <div class="page-header">
+                                            <h3>Current State or Country of Residence
+                                                <span class="ajax-loader-visualization">
+                                                    <img src="gif/leafajax_40124.gif" alt="" />
+                                              </span>
+                                            </h3>
+                                            <small>Source: Epic Clarity Data Warehouse, Epic ADT. Note: x-axis displayed on a logarithmic scale</small>
+                                        </div>
+                                        <div id="location-chart">
+                                            <span id="location-chart-limit" class="chart-option option-selected">Show Top 20 Only</span>
+                                            <span id="location-chart-nolimit" class="chart-option">Show All</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-5 col-md-6" id="language-ethnic-chart-container">
+                                        <div class="page-header">
+                                            <h3>Ethnic Background by Language
+                                                <span class="ajax-loader-visualization">
+                                                    <img src="gif/leafajax_40124.gif" alt="" />
+                                              </span>
+                                            </h3>
+                                            <small>Source: Epic Clarity Data Warehouse, Epic ADT</small>
+                                            <span class="chart-option option-selected pull-right" id="language-ethnic-chart-otherdetails">Other Language details</span>
+                                        </div>
+				                        <div id="language-ethnic-chart">
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-1 col-md-0">
+                                    </div>
+		                        </div>	
+                                 <div class='row visualization-row'>
+                                    <div class="col-lg-10 col-lg-offset-1 col-md-12">
+                                     <div class="page-header">
+                                         <h3>Query Result Breakdown
+                                             <span class="ajax-loader" id="ajax-loader-viz-breakdown">
+                                                 <img src="gif/leafajax_40124.gif" alt="" />
+                                             </span>
+                                         </h3>
+                                         <small>The output below indicates the number of patients meeting the query criteria, section by section.</small>
+                                     </div>
+                                     <div class="container-fluid" id="iteration-section">
+                                        <div class="row">
+                                            <div class="col-lg-3 col-md-3 iteration-output">
+                                            </div>
+                                            <div class="col-lg-1 col-md-1 iteration-gap">
+                                            </div>
+                                            <div class="col-lg-3 col-md-3 iteration-output">
+                                            </div>
+                                            <div class="col-lg-1 col-md-1 iteration-gap">
+                                            </div>
+                                            <div class="col-lg-3 col-md-3 iteration-output">
+                                            </div>
+                                        </div>
+                                    </div>
+                                 </div>
+                                 <div class="col-lg-1 col-md-0">
+                                 </div>
+                             </div>
+                             </div>
+                         </div>
+                        <div class="item carousel-item" data-slide-no="2">
+                             <div class="container-fluid">
+                                 <div id="patient-table-column" class="col-lg-12 col-md-12">
+                                     <div class="page-header row">
+                                        <div class="col-lg-9 col-md-9">
+                                        <div>
+                                        <span>
+                                          <label id="PatientListLabel"       class="h3">Patient List</label>
+  <span id="popoverHelpPL_PatientList" class="glyphicon glyphicon-question-sign question-marks"></span>
+                                        </span>
+
+                                                <span class="ajax-loader" id="ajax-loader-output">
+                                                    <img src="gif/leafajax_40124.gif" alt="" />
+                                                </span>
+</div>
+                                            
+                                            <small>The patient list shows patient demographics and other information limited to 499 patients. Data can be exported
+                                                  via the Export Data button on the right
+                                            </small>
+                                        </div>
+                                        <div class="col-lg-3 col-md-3">
+                                            <button type="button" class="btn btn-primary leaf-btn-main" id="btn-export">
+                    <span class="glyphicon glyphicon-cloud-download" style="font-size:18px"></span> Export Data
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div id="patientlist-openmodal-wrapper" class="col-lg-9">
+                                            <a id="patientlist-openmodal" class="patientlist-dataset-highlight">Datasets
+											<span id="popoverHelpPL_Datasets" class="glyphicon glyphicon-question-sign question-marks"></span>
+                                            </a>
+                                        </div>
+                                        <div class=" col-lg-3 col-md-3" id="patientlist-currentview-wrapper">
+                                             <div class="dropdown">
+											 <span id="popoverHelpPL_SavedView" class="glyphicon glyphicon-question-sign question-marks"></span>
+                                                <a class="dropdown-toggle" data-toggle="dropdown" id="patientlist-currentview" aria-expanded="false">Open Saved View
+                                                    <span class="caret"></span>
+                                                </a>
+                                                <ul class="dropdown-menu">
+                                                    <li><a>Start New View</a></li>
+                                                    <li role="separator" class="divider"></li>
+                                                </ul>
+                                                <a id="patientlist-save">Save/Edit Current View</a>
+                                             </div>
+                                        </div>
+							</div>
+                    </div>
+                </div>
+				</div>
+			</div>
+		</div>
+	</div>
+            
+    <script type="text/javascript" src="js/app.js"></script>
+    <script type="text/javascript" src="js/visualization.js"></script>
+</body>
+	
+</asp:contentplaceholder>
+
+
+</html>
+
